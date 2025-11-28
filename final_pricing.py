@@ -14,6 +14,16 @@ MODEL_FILENAME = "uplift_xgb.joblib"
 FEATURES_FILENAME = "feature_columns.joblib"
 CATEGORY_MAPS_FILENAME = "category_maps.joblib"
 
+# ---- Form code to human readable mapping ----
+FORM_CODE_LABELS = {
+    0: "Head On Shell On",
+    1: "Headless Shell On",
+    2: "Easy Peel",
+    3: "Peeled and Deveined Tail On",
+    4: "Peeled and Deveined Tail Off",
+}
+LABEL_TO_FORM_CODE = {v: k for k, v in FORM_CODE_LABELS.items()}
+
 
 # ------------- Load artifacts from Hugging Face -------------
 
@@ -297,12 +307,12 @@ def predict_price_with_ml(
 
 # ------------- Streamlit UI -------------
 
-st.set_page_config(page_title="Shrimp FOB Pricing v1", page_icon="🦐")
+st.set_page_config(page_title="Shrimp Pricing Model v1", page_icon="🦐")
 
-st.title("Shrimp Pricing Model- Deterministic + ML Uplift")
+st.title("Shrimp Pricing Model - Deterministic + ML uplift")
 
 st.write(
-    "Inputs: grade (a/b), treatment, form code, and premium. "
+    "Inputs: grade (a/b), treatment, form type, and premium. "
     "Backend uses today's date to pick week of year, "
     "fetches deterministic prices from Hugging Face dataset, "
     "then applies an XGBoost uplift model from Hugging Face."
@@ -315,10 +325,27 @@ grade_input = st.text_input("Grade (a/b)", value=default_grade, help="Example: 3
 treatment_options = sorted(price_ref["Treatment"].dropna().unique().tolist())
 treatment_input = st.selectbox("Treatment type", treatment_options)
 
-form_code_options = sorted(price_ref["Form_Code"].dropna().unique().tolist())
-form_code_input = st.selectbox("Form code", form_code_options)
+# form type dropdown based on dataset form codes but shown as readable labels
+available_form_codes = sorted(price_ref["Form_Code"].dropna().unique().tolist())
+form_type_options = [
+    FORM_CODE_LABELS[int(c)]
+    for c in available_form_codes
+    if int(c) in FORM_CODE_LABELS
+]
+
+form_type_input = st.selectbox("Form type", form_type_options)
+
+# map back to numeric form_code for internal logic and ML
+form_code_value = LABEL_TO_FORM_CODE[form_type_input]
 
 premium_input = st.selectbox("Premium percent", [4, 6, 8], index=2)
+
+# new adjustment input in cents
+adjustment_cents = st.selectbox(
+    "Client adjustment suggestion (cents per kg)",
+    [-30, -20, -10, 10, 20, 30],
+    index=3,  # default +10 cents, adjust if you like
+)
 
 if st.button("Calculate price"):
     try:
@@ -330,16 +357,24 @@ if st.button("Calculate price"):
             form_code_categories=form_code_categories,
             grade=grade_input,
             treatment=treatment_input,
-            form_code=int(form_code_input),
+            form_code=int(form_code_value),
             premium_pct=int(premium_input),
         )
 
+        # compute adjusted price
+        adjustment_usd = adjustment_cents / 100.0
+        P_adjusted = res["P_ml"] + adjustment_usd
+
         st.subheader("Price per kg (USD)")
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         col1.metric("Deterministic price", f"{res['P_det']:.2f}")
         col2.metric("ML uplift factor", f"{res['uplift_pred']:.3f}")
         col3.metric("ML suggested price", f"{res['P_ml']:.2f}")
+        col4.metric(
+            f"Client adjusted price ({adjustment_cents:+d} cents)",
+            f"{P_adjusted:.2f}",
+        )
 
         st.caption(
             f"Size band (dataset): {int(res['Size_Lower'])}/{int(res['Size_Upper'])}, "
