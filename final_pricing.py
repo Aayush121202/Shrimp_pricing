@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-from xgboost import XGBRegressor  # needed so joblib can load the model
+from xgboost import XGBRegressor  
 from huggingface_hub import hf_hub_download
 
 # Hugging Face repo ids and filenames
@@ -372,7 +372,7 @@ if st.button("Calculate price"):
         col2.metric("ML uplift factor", f"{res['uplift_pred']:.3f}")
         col3.metric("ML suggested price", f"{res['P_ml']:.2f}")
         col4.metric(
-            f"Client adjusted price ({adjustment_cents:+d} cents)",
+            f"Adjusted price ({adjustment_cents:+d} cents)",
             f"{P_adjusted:.2f}",
         )
 
