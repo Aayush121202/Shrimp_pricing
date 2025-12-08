@@ -6,8 +6,8 @@ from xgboost import XGBRegressor
 from huggingface_hub import hf_hub_download
 
 # Hugging Face repo ids and filenames
-DATASET_REPO_ID = "aayushpatel1212/shrimp_pricing_data"
-MODEL_REPO_ID = "aayushpatel1212/shrimp_pricing_v1"
+DATASET_REPO_ID = "aayushpatel1212/shrimp_pricing_data_v2"
+MODEL_REPO_ID = "aayushpatel1212/shrimp_pricing_v2"
 
 DATASET_FILENAME = "FINAL_COSTS_Vannamei.csv"
 MODEL_FILENAME = "uplift_xgb.joblib"
