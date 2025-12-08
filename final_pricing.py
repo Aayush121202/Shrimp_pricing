@@ -343,7 +343,7 @@ premium_input = st.selectbox("Premium percent", [4, 6, 8], index=2)
 # new adjustment input in cents
 adjustment_cents = st.selectbox(
     "Client adjustment suggestion (cents per kg)",
-    [-30, -20, -10, 10, 20, 30],
+    [-30, -20, -10, 0, 10, 20, 30],
     index=3,  # default +10 cents, adjust if you like
 )
 
